@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 	// "encoding/json"
 	"errors"
 	"log"
@@ -20,6 +21,7 @@ type Book struct {
 	ID primitive.ObjectID `json:"-" bson:"_id"` // Don't send ObjectID to client
 	Name string `json:"name"`
 	Author string `json:"author"`
+	Available bool `json:"available"`
 }
 
 var ctx context.Context
@@ -43,6 +45,7 @@ func main() {
 		ID: newID(), 
 		Name: "Macbeth", 
 		Author: "Shakespeare",
+		Available: true,
 	}
 	macbeth, err := insert(ctx, macbeth)
 	handle(err)
@@ -50,6 +53,7 @@ func main() {
 		ID: newID(), 
 		Name: "War and Peace", 
 		Author: "Leo Tolstoy",
+		Available: false,
 	}
 	warAndPeace, err = insert(ctx, warAndPeace)
 	handle(err)
@@ -75,11 +79,54 @@ func main() {
 		var book Book
 		c.BindJSON(&book)
 		book.ID = primitive.NewObjectID()
+		book.Available = true
 		book, err := insert(ctx, book)
 		if err != nil {
 			c.IndentedJSON(ok, gin.H{"message": book.Name + " already exists"})
 		} else {
 			c.IndentedJSON(ok, gin.H{"message": "Added successfully"})
+		}
+	})
+	r.POST("/borrow", func(c *gin.Context) {
+		var book Book
+		c.BindJSON(&book)
+		name := book.Name
+		err := borrow(ctx, name)
+		if err != nil {
+			c.IndentedJSON(ok, gin.H{
+				"message": "An error occured",
+				"error": err.Error(),
+			})
+		} else {
+			c.IndentedJSON(ok, gin.H{"message": book.Name + " was borrowed"})
+		}
+	})
+	r.POST("/return", func(c *gin.Context) {
+		var book Book
+		c.BindJSON(&book)
+		name := book.Name
+		err := returnBook(ctx, name)
+		if err != nil {
+			c.IndentedJSON(ok, gin.H{
+				"message": err.Error(),
+			})
+		} else {
+			c.IndentedJSON(ok, gin.H{"message": book.Name + " was returned"})
+		}
+	})
+	r.DELETE("/delete", func(c *gin.Context) {
+		var book Book
+		c.BindJSON(&book)
+		name := book.Name
+		count, err := deleteBook(ctx, name)
+		if err != nil {
+			c.IndentedJSON(ok, gin.H{
+				"message": err.Error(),
+			})
+		} else {
+			c.IndentedJSON(ok, gin.H{
+				"message": fmt.Sprintf("%d books were deleted", count),
+			})
 		}
 	})
 	r.Run()
@@ -129,6 +176,44 @@ func find(ctx context.Context, name string) []Book {
 	}
 	defer csr.Close(ctx)
 	return books
+}
+
+func deleteBook(ctx context.Context, name string) (int, error) {
+	filter := bson.M{
+		"name": name,
+	}
+	csr, err := collection.DeleteMany(ctx, filter)
+	if err != nil {
+		return 0, err
+	} else {
+		return int(csr.DeletedCount), nil
+	}
+}
+
+func borrow(ctx context.Context, name string) error {
+	filter := bson.M{
+		"name": name,
+	}
+	update := bson.M{
+		"$set": bson.M{
+			"available": false,
+		},
+	}
+	_, err := collection.UpdateOne(ctx, filter, update)
+	return err
+}
+
+func returnBook(ctx context.Context, name string) error {
+	filter := bson.M{
+		"name": name,
+	}
+	update := bson.M{
+		"$set": bson.M{
+			"available": true,
+		},
+	}
+	_, err := collection.UpdateOne(ctx, filter, update)
+	return err
 }
 
 func newID() primitive.ObjectID {
