@@ -34,6 +34,33 @@ func init() {
 
 	collection = clnt.Database("test").Collection("data")
 	log.Printf("Collection '%s' is selected", "data")
+
+	sampleBooks()
+}
+
+func sampleBooks() {
+	books := []Book {
+		{
+			Name: "War and Peace",
+			Author: "Leo Tolstoy",
+		},
+		{
+			Name: "Macbeth",
+			Author: "William Shakespeare",
+		},
+		{
+			Name: "The Hobbit",
+			Author: "J R R Tolkien",
+		},
+		{
+			Name: "The Adventures of Sherlock Holmes",
+			Author: "Sir Arthur Conan Doyle",
+		},
+	}
+	for _, book := range books {
+		_, err := Insert(book)
+		handle(err)
+	}
 }
 
 func insert(ctx context.Context, collection *mongo.Collection, book Book) (Book, error) {
