@@ -1,12 +1,17 @@
-version: '3'
+version: '3.9'
 services:
-  mongodb:
-    container_name: mongodb
+  backend:
+    build: ./backend
+    container_name: books-backend
+    ports:
+      - "8080:8080"
+  db:
     image: mongo
+    container_name: books-db
     ports:
       - "27017:27017"
     volumes:
-      - mongodb_data:/data/db
+      - db_data:/data/db
 
 volumes:
-  mongodb_data:
+  db_data:
