@@ -8,7 +8,7 @@ These instructions will get you a copy of the project up and running on your loc
 
 ### Prerequisites
 
-You need to have `docker` installed. To install it on Linux, follow the instructions [here](https://docs.docker.com/engine/install/).
+You need to have `docker` installed. To install it, follow the instructions [here](https://docs.docker.com/engine/install/).
 
 Note: Enable root-less access to docker (*Recommended*)
 
