@@ -1,17 +1,31 @@
 version: '3.9'
 services:
-  backend:
+  go:
     build: ./backend
-    container_name: books-backend
     ports:
-      - "8080:8080"
+      - 8080:8080
+    # profiles:
+    #   - demo
+    depends_on:
+      - db
+    environment:
+      # - MONGODB_USERNAME=value
+      # - MONGODB_PASSWORD=value
+      - MONGODB_HOSTNAME=books-db
+      - PORT=8080
   db:
     image: mongo
     container_name: books-db
     ports:
-      - "27017:27017"
+      - 27017:27017
     volumes:
       - db_data:/data/db
+    # profiles:
+    #   - demo
+    #   - dev
+    # environment:
+    #   - MONGO_INITDB_ROOT_USERNAME=value
+    #   - MONGO_INITDB_ROOT_PASSWORD=value
 
 volumes:
   db_data:

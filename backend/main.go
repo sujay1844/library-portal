@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"net/http"
+	"os"
 
 	"github.com/gin-gonic/gin"
 
@@ -33,7 +34,9 @@ func main() {
 
 	r.DELETE("/delete", deleteBook)
 
-	r.Run()
+	port := os.Getenv("PORT")
+	if port == "" {port = "8080"}
+	r.Run(":" + port)
 }
 
 func addBook (c *gin.Context) {

@@ -3,15 +3,15 @@ package db_helpers
 import (
 	"context"
 	"errors"
+	"fmt"
 	"log"
+	"os"
 
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
-
-const URL = "mongodb://books-db:27017"
 
 type Book struct {
 	ID primitive.ObjectID `json:"-" bson:"_id"` // Don't send ObjectID to client
@@ -23,6 +23,7 @@ type Book struct {
 var ctx context.Context
 var collection *mongo.Collection
 func init() {
+	URL := getURL()
 	ctx = context.Background()
 
 	opts := options.Client().ApplyURI(URL)
@@ -32,10 +33,23 @@ func init() {
 
 	log.Printf("MongoDB connected on %s", URL)
 
-	collection = clnt.Database("test").Collection("data")
+	collection = clnt.Database("library").Collection("books")
 	log.Printf("Collection '%s' is selected", "data")
 
 	sampleBooks()
+}
+
+func getURL() string {
+	username := os.Getenv("MONGODB_USERNAME")
+	password := os.Getenv("MONGODB_PASSWORD")
+	hostname := os.Getenv("MONGODB_HOSTNAME")
+	var URL string
+	if username == "" {
+		URL = fmt.Sprintf("mongodb://%s:27017", hostname)
+	} else {
+		URL = fmt.Sprintf("mongodb://%s:%s@%s:27017", username, password, hostname)
+	}
+	return URL
 }
 
 func sampleBooks() {
@@ -58,8 +72,7 @@ func sampleBooks() {
 		},
 	}
 	for _, book := range books {
-		_, err := Insert(book)
-		handle(err)
+		Insert(book)
 	}
 }
 
