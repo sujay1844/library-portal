@@ -10,6 +10,8 @@ import (
 	helpers "mongodb-test/db-helpers"
 )
 
+const BORROW_DAYS = 14
+
 func main() {
 
 	r := gin.Default()
@@ -32,6 +34,8 @@ func main() {
 
 	r.POST("/return", returnBook)
 
+	r.POST("/returnwithfine", returnBookWithFine)
+
 	r.DELETE("/delete", deleteBook)
 
 	port := os.Getenv("PORT")
@@ -53,29 +57,40 @@ func addBook (c *gin.Context) {
 func borrowBook (c *gin.Context) {
 	var book helpers.Book
 	c.BindJSON(&book)
-	name := book.Name
-	err := helpers.Borrow(name)
+	fmt.Println(book)
+	err := helpers.Borrow(book, BORROW_DAYS)
 	if err != nil {
 		c.IndentedJSON(http.StatusOK, gin.H{
-			"message": "An error occured",
-			"error": err.Error(),
+			"message": err.Error(),
 		})
 	} else {
-		c.IndentedJSON(http.StatusOK, gin.H{"message": book.Name + " was borrowed"})
+		c.IndentedJSON(http.StatusOK, gin.H{"message": "success"})
 	}
 }
 
 func returnBook (c *gin.Context) {
 	var book helpers.Book
 	c.BindJSON(&book)
-	name := book.Name
-	err := helpers.ReturnBook(name)
+	err := helpers.ReturnBook(book, BORROW_DAYS)
 	if err != nil {
 		c.IndentedJSON(http.StatusOK, gin.H{
 			"message": err.Error(),
 		})
 	} else {
-		c.IndentedJSON(http.StatusOK, gin.H{"message": book.Name + " was returned"})
+		c.IndentedJSON(http.StatusOK, gin.H{"message": "success"})
+	}
+}
+
+func returnBookWithFine (c *gin.Context) {
+	var book helpers.Book
+	c.BindJSON(&book)
+	err := helpers.ReturnBookWithFine(book)
+	if err != nil {
+		c.IndentedJSON(http.StatusOK, gin.H{
+			"message": err.Error(),
+		})
+	} else {
+		c.IndentedJSON(http.StatusOK, gin.H{"message": "success"})
 	}
 }
 

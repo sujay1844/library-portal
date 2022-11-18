@@ -4,8 +4,8 @@ services:
     build: ./backend
     ports:
       - 8080:8080
-    # profiles:
-    #   - demo
+    profiles:
+      - demo
     depends_on:
       - db
     environment:
@@ -20,9 +20,9 @@ services:
       - 27017:27017
     volumes:
       - db_data:/data/db
-    # profiles:
-    #   - demo
-    #   - dev
+    profiles:
+      - demo
+      - dev
     # environment:
     #   - MONGO_INITDB_ROOT_USERNAME=value
     #   - MONGO_INITDB_ROOT_PASSWORD=value
