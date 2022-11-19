@@ -19,9 +19,14 @@ type Book struct {
 	Name string `json:"name"`
 	Author string `json:"author"`
 	Available bool `json:"available"`
-	BorrowDate string `json:"borrow-date" bson:"borrow-date"`
-	BorrowedBy string `json:"borrowed-by" bson:"borrowed-by"`
+	Student Student `json:"student" bson:"student"`
 	ReturnDate string `json:"return-date" bson:"return-date"`
+}
+
+type Student struct {
+	Name string `json:"name" bson:"name"`
+	Std int `json:"std" bson:"std"`
+	Sec string `json:"sec" bson:"sec"`
 }
 
 var ctx context.Context
@@ -100,14 +105,13 @@ func insert(ctx context.Context, collection *mongo.Collection, book Book) (Book,
 func Insert(book Book) (Book, error) {
 	book.ID = primitive.NewObjectID()
 	book.Available = true
-	book.BorrowedBy = "none"
+	book.Student = Student{}
 	book.ReturnDate = "none"
-	book.BorrowDate = "none"
 	return insert(ctx, collection, book)
 }
 
 func findAll(ctx context.Context, collection *mongo.Collection) []Book {
-	csr, err := collection.Find(ctx, bson.D{})
+	csr, err := collection.Find(ctx, bson.M{})
 	handle(err)
 	var books []Book
 	for csr.Next(ctx) {
@@ -126,7 +130,10 @@ func FindAll() []Book {
 
 func find(ctx context.Context, collection *mongo.Collection, name string) []Book {
 	filter := bson.M{
-		"name": name,
+		"name": bson.M{
+			"$regex": ".*"+name+".*",
+			"$options": "i",
+		},
 	}
 	csr, err := collection.Find(ctx, filter)
 	handle(err)
@@ -165,14 +172,11 @@ func borrow(ctx context.Context, collection *mongo.Collection, book Book, days i
 	filter := bson.M{
 		"name": book.Name,
 	}
-	borrowYear, borrowMonth, borrowDay := time.Now().Local().Date()
-	returnYear, returnMonth, returnDay := time.Now().Local().AddDate(0, 0, days).Date()
 	update := bson.M{
 		"$set": bson.M{
 			"available": false,
-			"borrowed-by": book.BorrowedBy,
-			"return-date": fmt.Sprintf("%d-%d-%d", returnYear, returnMonth, returnDay),
-			"borrow-date": fmt.Sprintf("%d-%d-%d", borrowYear, borrowMonth, borrowDay),
+			"student": book.Student,
+			"return-date": time.Now().Local().AddDate(0, 0, days).Format("2006-01-02"),
 		},
 	}
 	_, err := collection.UpdateOne(ctx, filter, update)
@@ -187,10 +191,10 @@ func Borrow(book Book, days int) error {
 }
 
 func validateBorrow(book Book) error {
-	books := Find(book.Name)
-	if book.BorrowedBy == "none" || book.BorrowedBy == "" {
-		return errors.New("borrower name not provided")
+	if book.Student.Name == "" {
+		return errors.New("student details not provided")
 	}
+	books := Find(book.Name)
 	if len(books) == 0 {
 		return errors.New("book not found")
 	} else if len(books) > 1 {
@@ -210,9 +214,12 @@ func returnBook(ctx context.Context, collection *mongo.Collection, book Book) er
 	update := bson.M{
 		"$set": bson.M{
 			"available": true,
-			"borrow-date": "none",
 			"return-date": "none",
-			"borrowed-by": "none",
+			"student": bson.M{
+				"name": "",
+				"std": 0,
+				"sec": "",
+			},
 		},
 	}
 	_, err := collection.UpdateOne(ctx, filter, update)
@@ -227,7 +234,7 @@ func ReturnBook(book Book, days int) error {
 	if err != nil { return err }
 
 	if delayInDays > 0 {
-		return errors.New(fmt.Sprintf("Return delayed by %d", delayInDays))
+		return errors.New(fmt.Sprintf("Return delayed by %d days", delayInDays))
 	}
 	return returnBook(ctx, collection, book)
 }
@@ -254,11 +261,12 @@ func validateReturn(book Book) error {
 }
 
 func isReturnDelayed(book Book, days int) (int, error) {
-	borrowObj, err := time.Parse("2006-1-2", book.BorrowDate)
+	book = Find(book.Name)[0]
+	returnObj, err := time.Parse("2006-01-02", book.ReturnDate)
 	if err != nil { return 0, err }
 
-	diff := int(time.Now().Local().Sub(borrowObj).Hours()/24)
-	if diff > days { return diff-days, nil }
+	diff := int(time.Now().Local().Sub(returnObj).Hours()/24)
+	if diff > 0 { return diff, nil }
 
 	return 0, nil
 }

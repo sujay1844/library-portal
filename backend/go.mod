@@ -1,4 +1,4 @@
-module mongodb-test
+module backend
 
 go 1.18
 

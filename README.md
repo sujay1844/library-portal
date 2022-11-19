@@ -12,7 +12,7 @@ You need to have `docker` installed. To install it, follow the instructions [her
 
 Note: Enable root-less access to docker (*Recommended*)
 
-### Installing
+### Installing and Usage
 
 First, download the source code
 
@@ -23,7 +23,7 @@ git clone https://github.com/sujay1844/library-portal.git
 And then setup the demo environment
 
 ```bash
-docker compose up -d
+docker compose --profile demo up -d
 ```
 
 To test if the server is running, run
@@ -33,6 +33,11 @@ curl http://localhost:8080/all
 ```
 
 The above command should return a list of books in `json` format.
+
+For development, run,
+```bash
+docker compose --profile dev up -d
+```
 
 
 ## Built With

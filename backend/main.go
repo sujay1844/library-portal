@@ -7,7 +7,8 @@ import (
 
 	"github.com/gin-gonic/gin"
 
-	helpers "mongodb-test/db-helpers"
+	helpers "backend/db-helpers"
+	logger "backend/logger"
 )
 
 const BORROW_DAYS = 14
@@ -38,6 +39,10 @@ func main() {
 
 	r.DELETE("/delete", deleteBook)
 
+	r.GET("/logs", func(c *gin.Context) {
+		c.IndentedJSON(http.StatusOK, logger.GetLogs())
+	})
+
 	port := os.Getenv("PORT")
 	if port == "" {port = "8080"}
 	r.Run(":" + port)
@@ -57,14 +62,20 @@ func addBook (c *gin.Context) {
 func borrowBook (c *gin.Context) {
 	var book helpers.Book
 	c.BindJSON(&book)
-	fmt.Println(book)
 	err := helpers.Borrow(book, BORROW_DAYS)
 	if err != nil {
 		c.IndentedJSON(http.StatusOK, gin.H{
 			"message": err.Error(),
 		})
 	} else {
-		c.IndentedJSON(http.StatusOK, gin.H{"message": "success"})
+		err = logger.ParseData(book, "borrow")
+		if err != nil {
+			c.IndentedJSON(http.StatusOK, gin.H{
+				"message": err.Error(),
+			})
+		} else {
+			c.IndentedJSON(http.StatusOK, gin.H{"message": "success"})
+		}
 	}
 }
 
@@ -77,7 +88,14 @@ func returnBook (c *gin.Context) {
 			"message": err.Error(),
 		})
 	} else {
-		c.IndentedJSON(http.StatusOK, gin.H{"message": "success"})
+		err = logger.ParseData(book, "return")
+		if err != nil {
+			c.IndentedJSON(http.StatusOK, gin.H{
+				"message": err.Error(),
+			})
+		} else {
+			c.IndentedJSON(http.StatusOK, gin.H{"message": "success"})
+		}
 	}
 }
 
