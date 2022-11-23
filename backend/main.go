@@ -43,6 +43,12 @@ func main() {
 		c.IndentedJSON(http.StatusOK, logger.GetLogs())
 	})
 
+	r.GET("/filterlogs", func(c *gin.Context) {
+		var query logger.Query
+		c.BindJSON(&query)
+		c.IndentedJSON(http.StatusOK, logger.FilterByDate(query))
+	})
+
 	port := os.Getenv("PORT")
 	if port == "" {port = "8080"}
 	r.Run(":" + port)

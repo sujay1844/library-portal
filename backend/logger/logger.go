@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 
@@ -16,7 +17,7 @@ import (
 
 type Entry struct {
 	Name string
-	Date string
+	Date primitive.DateTime
 	Action string
 	Student string
 	Std int
@@ -60,7 +61,7 @@ func getURL() string {
 func ParseData(book helpers.Book, action string) error {
 	entry := Entry{
 			Name: book.Name,
-			Date: time.Now().Local().Format("2006-01-02"),
+			Date: primitive.NewDateTimeFromTime(time.Now().Local()),
 			Action: action,
 			Student: book.Student.Name,
 			Std: book.Student.Std,
